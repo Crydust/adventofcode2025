@@ -77,8 +77,8 @@ public class Day7Part1 {
         }
 
         private int index(int x, int y) {
-            if (x < 0 || x >= rows || y < 0 || y >= columns) {
-                return -1;
+            if (x < 0 || x >= columns || y < 0 || y >= rows) {
+                throw new IllegalArgumentException("Invalid coordinates: (" + x + ", " + y + ")");
             }
             return (y * columns) + x;
         }

@@ -93,7 +93,7 @@ public class Day4Part2 {
         }
 
         private int index(int x, int y) {
-            if (x < 0 || x >= rows || y < 0 || y >= columns) {
+            if (x < 0 || x >= columns || y < 0 || y >= rows) {
                 return -1;
             }
             return (y * columns) + x;
