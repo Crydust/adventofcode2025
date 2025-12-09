@@ -25,8 +25,7 @@ public class Day7Part1 {
         Set<Integer> beams = new TreeSet<>();
         beams.add(lines.getFirst().indexOf("S"));
 
-        // the "+1" should not be necessary, but it fixes an off by one error
-        Grid grid = new Grid(rowCount + 1, columnCount + 1);
+        Grid grid = new Grid(rowCount, columnCount);
         for (int y = 0; y < rowCount; y++) {
             String line = lines.get(y);
             for (int x = 0; x < columnCount; x++) {
@@ -62,10 +61,6 @@ public class Day7Part1 {
             this.rows = rows;
             this.columns = columns;
             items = new BitSet(rows * columns);
-        }
-
-        boolean isEmpty(int x, int y) {
-            return !items.get(index(x, y));
         }
 
         boolean isSplitter(int x, int y) {
