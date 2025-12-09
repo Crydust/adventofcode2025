@@ -15,8 +15,8 @@ import static java.util.function.Predicate.not;
 public class Day7Part2 {
 
     static void main() throws Exception {
-        List<String> lines = readInputLines("/example.txt").stream()
-//        List<String> lines = readInputLines("/input.txt").stream()
+//        List<String> lines = readInputLines("/example.txt").stream()
+        List<String> lines = readInputLines("/input.txt").stream()
                 .filter(not(String::isBlank))
                 .toList();
         int rowCount = lines.size();
@@ -34,7 +34,6 @@ public class Day7Part2 {
                 }
             }
         }
-        //System.out.println("grid = \n" + grid);
 
         for (int y = 0; y < rowCount; y++) {
             Map<Integer, Long> newBeams = new HashMap<>();
@@ -53,7 +52,7 @@ public class Day7Part2 {
 
         long sum = currentBeams.stream().mapToLong(Beam::possibleRoutes).sum();
         System.out.println("sum = " + sum);
-        // too low: 40941112789504
+        // 40941112789504
     }
 
     private record Beam(int x, long possibleRoutes) {
@@ -83,18 +82,6 @@ public class Day7Part2 {
                 throw new IllegalArgumentException("Invalid coordinates: (" + x + ", " + y + ")");
             }
             return (y * columns) + x;
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder sb = new StringBuilder();
-            for (int y = 0; y < rows; y++) {
-                for (int x = 0; x < columns; x++) {
-                    sb.append(isSplitter(x, y) ? '^' : '.');
-                }
-                sb.append('\n');
-            }
-            return sb.toString();
         }
     }
 
