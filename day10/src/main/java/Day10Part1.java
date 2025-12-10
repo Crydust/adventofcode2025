@@ -28,163 +28,37 @@ public class Day10Part1 {
                 .toList();
         int sum = 0;
         for (Machine machine : machines) {
-            if (canBeSolvedWithOneButtonPress(machine)) {
-                sum += 1;
-            } else if (canBeSolvedWithTwoButtonPresses(machine)) {
-                sum += 2;
-            } else if (canBeSolvedWithThreeButtonPresses(machine)) {
-                sum += 3;
-            } else if (canBeSolvedWithFourButtonPresses(machine)) {
-                sum += 4;
-            } else if (canBeSolvedWithFiveButtonPresses(machine)) {
-                sum += 5;
-            } else if (canBeSolvedWithSixButtonPresses(machine)) {
-                sum += 6;
-            } else if (canBeSolvedWithSevenButtonPresses(machine)) {
-                sum += 7;
+            int solvedIn = -1;
+            for (int i = 1; i < 10; i++) {
+                if (canBeSolved(machine, i)) {
+                    solvedIn = i;
+                    break;
+                }
+            }
+            if (solvedIn != -1) {
+                sum += solvedIn;
             } else {
                 System.out.println("no solution for " + machine);
             }
         }
         System.out.println("sum = " + sum);
+        // 385
     }
 
-    private static boolean canBeSolvedWithOneButtonPress(Machine machine) {
+    private static boolean canBeSolved(Machine machine, int presses) {
+        return canBeSolved(machine, presses, new BitSet(machine.lights().length()));
+    }
+
+    private static boolean canBeSolved(Machine machine, int presses, BitSet currentLights) {
+        if (presses == 0) {
+            return currentLights.equals(machine.lights());
+        }
         for (BitSet button : machine.buttons()) {
-            BitSet lights = new BitSet(machine.lights().length());
-            lights.xor(button);
-            if (lights.equals(machine.lights())) {
+            currentLights.xor(button);
+            if (canBeSolved(machine, presses - 1, currentLights)) {
                 return true;
             }
-        }
-        return false;
-    }
-
-    private static boolean canBeSolvedWithTwoButtonPresses(Machine machine) {
-        for (BitSet a : machine.buttons()) {
-            for (BitSet b : machine.buttons()) {
-                BitSet lights = new BitSet(machine.lights().length());
-                lights.xor(a);
-                lights.xor(b);
-                if (lights.equals(machine.lights())) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    private static boolean canBeSolvedWithThreeButtonPresses(Machine machine) {
-        for (BitSet a : machine.buttons()) {
-            for (BitSet b : machine.buttons()) {
-                for (BitSet c : machine.buttons()) {
-                    BitSet lights = new BitSet(machine.lights().length());
-                    lights.xor(a);
-                    lights.xor(b);
-                    lights.xor(c);
-                    if (lights.equals(machine.lights())) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
-    }
-
-    private static boolean canBeSolvedWithFourButtonPresses(Machine machine) {
-        for (BitSet a : machine.buttons()) {
-            for (BitSet b : machine.buttons()) {
-                for (BitSet c : machine.buttons()) {
-                    for (BitSet d : machine.buttons()) {
-                        BitSet lights = new BitSet(machine.lights().length());
-                        lights.xor(a);
-                        lights.xor(b);
-                        lights.xor(c);
-                        lights.xor(d);
-                        if (lights.equals(machine.lights())) {
-                            return true;
-                        }
-                    }
-                }
-            }
-        }
-        return false;
-    }
-
-    private static boolean canBeSolvedWithFiveButtonPresses(Machine machine) {
-        for (BitSet a : machine.buttons()) {
-            for (BitSet b : machine.buttons()) {
-                for (BitSet c : machine.buttons()) {
-                    for (BitSet d : machine.buttons()) {
-                        for (BitSet e : machine.buttons()) {
-                            BitSet lights = new BitSet(machine.lights().length());
-                            lights.xor(a);
-                            lights.xor(b);
-                            lights.xor(c);
-                            lights.xor(d);
-                            lights.xor(e);
-                            if (lights.equals(machine.lights())) {
-                                return true;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return false;
-    }
-
-    private static boolean canBeSolvedWithSixButtonPresses(Machine machine) {
-        for (BitSet a : machine.buttons()) {
-            for (BitSet b : machine.buttons()) {
-                for (BitSet c : machine.buttons()) {
-                    for (BitSet d : machine.buttons()) {
-                        for (BitSet e : machine.buttons()) {
-                            for (BitSet f : machine.buttons()) {
-                                BitSet lights = new BitSet(machine.lights().length());
-                                lights.xor(a);
-                                lights.xor(b);
-                                lights.xor(c);
-                                lights.xor(d);
-                                lights.xor(e);
-                                lights.xor(f);
-                                if (lights.equals(machine.lights())) {
-                                    return true;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return false;
-    }
-
-    private static boolean canBeSolvedWithSevenButtonPresses(Machine machine) {
-        for (BitSet a : machine.buttons()) {
-            for (BitSet b : machine.buttons()) {
-                for (BitSet c : machine.buttons()) {
-                    for (BitSet d : machine.buttons()) {
-                        for (BitSet e : machine.buttons()) {
-                            for (BitSet f : machine.buttons()) {
-                                for (BitSet g : machine.buttons()) {
-                                    BitSet lights = new BitSet(machine.lights().length());
-                                    lights.xor(a);
-                                    lights.xor(b);
-                                    lights.xor(c);
-                                    lights.xor(d);
-                                    lights.xor(e);
-                                    lights.xor(f);
-                                    lights.xor(g);
-                                    if (lights.equals(machine.lights())) {
-                                        return true;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            currentLights.xor(button); // Backtrack
         }
         return false;
     }
