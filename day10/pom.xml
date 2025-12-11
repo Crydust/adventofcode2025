@@ -15,10 +15,11 @@
     </properties>
 
     <dependencies>
+        <!-- hipparchus is a fork of commons-math -->
         <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-math3</artifactId>
-            <version>3.6.1</version>
+            <groupId>org.hipparchus</groupId>
+            <artifactId>hipparchus-core</artifactId>
+            <version>4.0.2</version>
         </dependency>
     </dependencies>
 </project>

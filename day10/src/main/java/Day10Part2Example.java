@@ -1,4 +1,4 @@
-import org.apache.commons.math3.linear.*;
+import org.hipparchus.linear.*;
 
 import static java.util.stream.Collectors.joining;
 
@@ -37,13 +37,17 @@ import static java.util.stream.Collectors.joining;
 /// ```
 ///
 /// We don't have a square matrix.
-/// According to the documentation of apache commons math on [Linear Algebra](https://commons.apache.org/proper/commons-math/userguide/linear.html) we can't use an LU decomposition.
+/// Hipparchus is a fork of commons-math and seems better maintained.
+/// According to the documentation of Hipparchus on [Linear Algebra](https://www.hipparchus.org/hipparchus-core/linear.html) we can't use an LU decomposition.
 /// But QRDecomposition or SingularValueDecomposition do work with non-square matrixes.
 /// QRDecomposition is well suited to solve linear least squares, which is exactly what we want.
 ///
 /// We find a solution when `n = 10`: `a=,1 b=5, c=0, d=1, e=3, f=0`.
 /// This is a different solution from what the instructions said, but I feel good about it nonetheless.
+///
 void main() {
+
+    final double NEARLY_ZERO = 1e-6;
 
     RealMatrix coefficients = new Array2DRowRealMatrix(new double[][]{
             // button presses should yield joltages
@@ -54,7 +58,7 @@ void main() {
             // sum of button presses should be minimal
             {1, 1, 1, 1, 1, 1}
     });
-    DecompositionSolver solver = new QRDecomposition(coefficients, 1e-6).getSolver();
+    DecompositionSolver solver = new QRDecomposition(coefficients, NEARLY_ZERO).getSolver();
     for (int n = 7; n < 1000; n++) {
         RealVector constants = new ArrayRealVector(new double[]{
                 // button presses should yield joltages
@@ -68,12 +72,12 @@ void main() {
         double[] solution = solver.solve(constants).toArray();
 
         // the solution should contain only positive numbers (double might be very close to zero)
-        if (!Arrays.stream(solution).allMatch(it -> it >= -1e-6)) {
+        if (!Arrays.stream(solution).allMatch(it -> it >= -1 * NEARLY_ZERO)) {
             continue;
         }
 
         // the solution should contain only integers (or almost integers)
-        if (!Arrays.stream(solution).allMatch(it -> Math.abs(it - Math.round(it)) < 1e-6)) {
+        if (!Arrays.stream(solution).allMatch(it -> Math.abs(it - Math.round(it)) < NEARLY_ZERO)) {
             continue;
         }
 
