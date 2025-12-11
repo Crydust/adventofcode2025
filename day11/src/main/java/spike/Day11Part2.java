@@ -4,7 +4,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.*;
-import java.util.stream.Stream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
@@ -13,8 +12,8 @@ import static java.util.function.Predicate.not;
 public class Day11Part2 {
 
     static void main() throws Exception {
-        List<String> lines = readInputLines("/example2.txt").stream()
-//        List<String> lines = readInputLines("/input.txt").stream()
+//        List<String> lines = readInputLines("/example2.txt").stream()
+        List<String> lines = readInputLines("/input.txt").stream()
                 .filter(not(String::isBlank))
                 .toList();
         List<Device> devices = lines.stream()
@@ -31,37 +30,53 @@ public class Day11Part2 {
         String intermediateTarget1 = "fft";
         String intermediateTarget2 = "dac";
         String target = "out";
-        Set<List<String>> paths = new HashSet<>();
-        paths.add(List.of(source));
-        boolean changed = true;
-        while (changed) {
-            changed = false;
-            Set<List<String>> pathsToAdd = new HashSet<>();
-            for (Iterator<List<String>> iterator = paths.iterator(); iterator.hasNext(); ) {
-                List<String> path = iterator.next();
-                String head = path.getLast();
-                if (head.equals(target)) {
-                    continue;
-                }
-                boolean added = false;
-                for (String output : devicesByName.get(head).outputs()) {
-                    if (path.contains(output)) {
-                        continue;
-                    }
-                    added = true;
-                    List<String> newPath = Stream.concat(path.stream(), Stream.of(output)).toList();
-                    pathsToAdd.add(newPath);
-                }
-                if (added) {
-                    changed = true;
-                }
-                iterator.remove();
-            }
-            paths.addAll(pathsToAdd);
+
+        Set<String> requiredNodes = Set.of(intermediateTarget1, intermediateTarget2);
+        long pathCount = countPathsWithRequiredNodes(devicesByName, source, target, requiredNodes);
+        System.out.println("paths.size() = " + pathCount);
+    }
+
+    static long countPathsWithRequiredNodes(Map<String, Device> devicesByName,
+                                           String source,
+                                           String target,
+                                           Set<String> requiredNodes) {
+        // Use memoization: map from (current node, remaining required nodes) -> path count
+        Map<CacheKey, Long> memo = new HashMap<>();
+        return dfs(source, target, requiredNodes, new HashSet<>(), devicesByName, memo);
+    }
+
+    private record CacheKey(String node, Set<String> remaining) {}
+
+    private static long dfs(String current,
+                           String target,
+                           Set<String> requiredRemaining,
+                           Set<String> visited,
+                           Map<String, Device> devicesByName,
+                           Map<CacheKey, Long> memo) {
+        if (current.equals(target)) {
+            return requiredRemaining.isEmpty() ? 1 : 0;
         }
-        paths.removeIf(not(list -> list.contains(intermediateTarget1)));
-        paths.removeIf(not(list -> list.contains(intermediateTarget2)));
-        System.out.println("paths.size() = " + paths.size());
+
+        CacheKey key = new CacheKey(current, new HashSet<>(requiredRemaining));
+        if (memo.containsKey(key)) {
+            return memo.get(key);
+        }
+
+        visited.add(current);
+
+        Set<String> newRequired = new HashSet<>(requiredRemaining);
+        newRequired.remove(current);
+
+        long totalPaths = 0;
+        for (String next : devicesByName.get(current).outputs()) {
+            if (!visited.contains(next)) {
+                totalPaths += dfs(next, target, newRequired, new HashSet<>(visited),
+                        devicesByName, memo);
+            }
+        }
+
+        memo.put(key, totalPaths);
+        return totalPaths;
     }
 
     private record Device(String name, List<String> outputs) {
