@@ -21,5 +21,10 @@
             <artifactId>hipparchus-core</artifactId>
             <version>4.0.2</version>
         </dependency>
+        <dependency>
+            <groupId>org.ojalgo</groupId>
+            <artifactId>ojalgo</artifactId>
+            <version>56.1.1</version>
+        </dependency>
     </dependencies>
 </project>
