@@ -1,7 +1,6 @@
 import org.chocosolver.solver.Model;
 import org.chocosolver.solver.Solution;
 import org.chocosolver.solver.Solver;
-import org.chocosolver.solver.expression.discrete.arithmetic.ArExpression;
 import org.chocosolver.solver.variables.IntVar;
 
 import java.io.BufferedReader;
@@ -69,18 +68,10 @@ public class Day10Part2 {
                     intVars.add(as[j]);
                 }
             }
-            if (!intVars.isEmpty()) {
-                model.sum(intVars.toArray(IntVar[]::new), "=", joltage).post();
-            } else {
-                throw new IllegalStateException("Zero buttons control this joltage?");
-            }
+            model.sum(intVars.toArray(IntVar[]::new), "=", joltage).post();
         }
         // minimize total buttonpresses
-        ArExpression temp = as[0];
-        for (int i = 1; i < as.length; i++) {
-            temp = temp.add(as[i]);
-        }
-        IntVar totalButtonPresses = temp.intVar();
+        IntVar totalButtonPresses = model.sum("totalButtonPresses", as);
         model.setObjective(Model.MINIMIZE, totalButtonPresses);
         // solve
         Solver solver = model.getSolver();
