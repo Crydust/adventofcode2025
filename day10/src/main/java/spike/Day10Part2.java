@@ -50,10 +50,7 @@ public class Day10Part2 {
 //        );
 
         int sum = lines.parallelStream()
-                .map(line -> {
-                    List<Integer> joltages = parseJoltages(line);
-                    return new Machine(line, joltages, parseButtons(line, joltages.size()));
-                })
+                .map(Day10Part2::parseMachine)
                 .mapToInt(Day10Part2::determineMinimalButtonPressesAndLogSlowOnes)
                 .sum();
 
@@ -68,7 +65,7 @@ public class Day10Part2 {
         Stopwatch stopwatch = Stopwatch.start();
         int result = determineMinimalButtonPresses(machine);
         stopwatch.stop();
-        if (stopwatch.hasExceeded(Duration.ofSeconds(1))) {
+        if (stopwatch.hasExceeded(Duration.ofSeconds(4))) {
             System.out.println(stopwatch + " for machine " + machine);
         }
 //        try {
@@ -84,44 +81,28 @@ public class Day10Part2 {
     }
 
     private static int determineMinimalButtonPresses(Machine machine) {
-        int simpleSolution = tryToSolveWithLUDecomposition(machine);
+        int simpleSolution = tryToSolveWithDecompositionSolver(machine);
         if (simpleSolution != -1) {
             return simpleSolution;
         }
         return solveWithConstrainSolver(machine);
     }
 
-    private static int tryToSolveWithLUDecomposition(Machine machine) {
+    static int tryToSolveWithDecompositionSolver(Machine machine) {
         // This is fast but will only solve 17 of the machines
         int buttonCount = machine.buttons.size();
         int joltageCount = machine.joltages.size();
         if (joltageCount + 1 != buttonCount) {
             // LUDecomposition can't solve non square matrix
+            // QRDecomposition and SingularValueDecomposition can, but yield undesirable answers
             return -1;
         }
 
         // Create A
-        double[][] a = new double[joltageCount + 1][buttonCount];
-        // for each joltage
-        for (int i = 0; i < joltageCount; i++) {
-            a[i] = new double[buttonCount];
-            Arrays.fill(a[i], 0);
-            // for each button
-            for (int j = 0; j < buttonCount; j++) {
-                if (machine.buttons.get(j).get(i)) {
-                    a[i][j] = 1;
-                }
-            }
-        }
-        a[joltageCount] = new double[buttonCount];
-        Arrays.fill(a[joltageCount], 1);
+        double[][] a = createMatrixA(machine, joltageCount, buttonCount);
 
         // Create B
-        double[] b = new double[joltageCount + 1];
-        for (int i = 0; i < joltageCount; i++) {
-            b[i] = machine.joltages.get(i);
-        }
-        b[joltageCount] = -1; // we'll guess this
+        double[] b = createMatrixB(machine, joltageCount);
 
         // Solve matrix
         int firstGuess = machine.joltages.stream().mapToInt(it -> it).max().orElseThrow();
@@ -131,8 +112,6 @@ public class Day10Part2 {
         try {
             // using other solvers than LUDecomposition yields unreliable results
             solver = new LUDecomposition(new Array2DRowRealMatrix(a)).getSolver();
-//            solver = new QRDecomposition(new Array2DRowRealMatrix(a)).getSolver();
-//            solver = new SingularValueDecomposition(new Array2DRowRealMatrix(a)).getSolver();
         } catch (MathIllegalArgumentException e) {
             System.out.println("Could not create solver: " + e.getMessage());
             return -1;
@@ -150,14 +129,41 @@ public class Day10Part2 {
             // rint is faster than round
             if (Arrays.stream(solution)
                     .allMatch(it -> it >= -1 * 1e-11
-                                    && Math.abs(it - Math.rint(it)) < 1e-11)) {
+                            && Math.abs(it - Math.rint(it)) < 1e-11)) {
                 return n;
             }
         }
         return -1;
     }
 
-    private static int solveWithConstrainSolver(Machine machine) {
+    private static double[][] createMatrixA(Machine machine, int joltageCount, int buttonCount) {
+        double[][] a = new double[joltageCount + 1][buttonCount];
+        // for each joltage
+        for (int i = 0; i < joltageCount; i++) {
+            a[i] = new double[buttonCount];
+            Arrays.fill(a[i], 0);
+            // for each button
+            for (int j = 0; j < buttonCount; j++) {
+                if (machine.buttons.get(j).get(i)) {
+                    a[i][j] = 1;
+                }
+            }
+        }
+        a[joltageCount] = new double[buttonCount];
+        Arrays.fill(a[joltageCount], 1);
+        return a;
+    }
+
+    private static double[] createMatrixB(Machine machine, int joltageCount) {
+        double[] b = new double[joltageCount + 1];
+        for (int i = 0; i < joltageCount; i++) {
+            b[i] = machine.joltages.get(i);
+        }
+        b[joltageCount] = -1; // we'll guess this
+        return b;
+    }
+
+    static int solveWithConstrainSolver(Machine machine) {
         // Begin solving with Choco
         Model model = new Model();
         int buttonCount = machine.buttons.size();
@@ -193,12 +199,16 @@ public class Day10Part2 {
         // solve
         Solver solver = model.getSolver();
         Solution solution = solver.findOptimalSolution(totalButtonPresses, Model.MINIMIZE);
-//        System.out.println("solution = " + solution);
         if (solution == null) {
             throw new IllegalStateException("No solution found! for machine " + machine);
         } else {
             return solution.getIntVal(totalButtonPresses);
         }
+    }
+
+    static Machine parseMachine(String line) {
+        List<Integer> joltages = parseJoltages(line);
+        return new Machine(line, joltages, parseButtons(line, joltages.size()));
     }
 
     private static List<Integer> parseJoltages(String line) {
