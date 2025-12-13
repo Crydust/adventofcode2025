@@ -3,8 +3,6 @@ import org.chocosolver.solver.Solution;
 import org.chocosolver.solver.Solver;
 import org.chocosolver.solver.expression.discrete.arithmetic.ArExpression;
 import org.chocosolver.solver.variables.IntVar;
-import org.hipparchus.exception.MathIllegalArgumentException;
-import org.hipparchus.linear.*;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -21,14 +19,8 @@ import static java.util.Objects.requireNonNull;
 
 public class Day10Part2 {
 
-    private static final boolean USE_HIPPARCHUS = false;
-//    private static final boolean USE_HIPPARCHUS = true;
-//    private static final boolean USE_CHOCO = false;
-    private static final boolean USE_CHOCO = true;
-
     private static final Pattern MACHINE_JOLTAGE_PATTERN = Pattern.compile("\\{([0-9,]+)}");
     private static final Pattern MACHINE_BUTTON_PATTERN = Pattern.compile("\\(([0-9,]+)\\)");
-    private static final double NEARLY_ZERO = 1e-6;
 
     static void main() throws Exception {
 //        List<String> lines = readInputLines("/example.txt");
@@ -47,105 +39,10 @@ public class Day10Part2 {
                 .sum();
 
         IO.println("sum = " + sum);
-        // wrong: 11909
-        // wrong: 15375
-        // wrong: 16206
-        // wrong: 16609
-        // wrong: 16767
-        // wrong: 16839
-        // wrong: 16808
-        // maybe: 16757 only choco
+        // 16757
     }
 
     private static int determineMinimalButtonPresses(Machine machine) {
-        double[][] a = createA(machine);
-        double[] b = createB(machine);
-
-        int i = tryToSolve(machine, a, b);
-
-        if (i == 0) {
-            IO.println("error: solution impossible for machine " + machine);
-//            System.out.println("*** buttonCount = " + buttonCount);
-//            System.out.println("*** joltageCount = " + joltageCount);
-        } else {
-//            IO.println("solved");
-        }
-        return i;
-    }
-
-    private static double[][] createA(Machine machine) {
-        int buttonCount = machine.buttons.size();
-        int joltageCount = machine.joltages.size();
-        double[][] a = new double[joltageCount + 1][buttonCount];
-        // for each joltage
-        for (int i = 0; i < joltageCount; i++) {
-            a[i] = new double[buttonCount];
-            Arrays.fill(a[i], 0);
-            // for each button
-            for (int j = 0; j < buttonCount; j++) {
-                if (machine.buttons.get(j).get(i)) {
-                    a[i][j] = 1;
-                }
-            }
-        }
-        a[joltageCount] = new double[buttonCount];
-        Arrays.fill(a[joltageCount], 1);
-        return a;
-    }
-
-    private static double[] createB(Machine machine) {
-        int joltageCount = machine.joltages.size();
-        double[] b = new double[joltageCount + 1];
-        for (int i = 0; i < joltageCount; i++) {
-            b[i] = machine.joltages.get(i);
-        }
-        b[joltageCount] = -1; // we'll guess this
-        return b;
-    }
-
-    private static int tryToSolve(Machine machine, double[][] a, double[] b) {
-        int result = 0;
-        if (USE_HIPPARCHUS) {
-            result = tryToSolveWithHipparchus(machine, a, b);
-            if (result != 0) return result;
-        }
-        if (USE_CHOCO) {
-            result = tryToSolveWithChoco(machine);
-            if (result != 0) return result;
-        }
-        return result;
-    }
-
-    private static int tryToSolveWithHipparchus(Machine machine, double[][] a, double[] b) {
-        RealMatrix coefficients = new Array2DRowRealMatrix(a);
-        DecompositionSolver solver = new SingularValueDecomposition(coefficients).getSolver();
-        int firstGuess = machine.joltages.stream().mapToInt(it -> it).max().orElseThrow();
-        int lastGuess = machine.joltages.stream().mapToInt(it -> it).sum();
-        int joltageCount = machine.joltages.size();
-        for (int n = firstGuess; n <= lastGuess; n++) {
-            b[joltageCount] = n;
-            RealVector constants = new ArrayRealVector(b);
-            double[] solution;
-            try {
-                solution = solver.solve(constants).toArray();
-            } catch (MathIllegalArgumentException e) {
-                continue;
-            }
-            // the solution should contain only positive numbers (double might be very close to zero)
-            if (!Arrays.stream(solution).allMatch(it -> it >= -1 * NEARLY_ZERO)) {
-                continue;
-            }
-            // the solution should contain only integers (or almost integers)
-            if (!Arrays.stream(solution).allMatch(it -> Math.abs(it - Math.round(it)) < NEARLY_ZERO)) {
-                continue;
-            }
-            return n;
-        }
-        return 0;
-    }
-
-    private static int tryToSolveWithChoco(Machine machine) {
-//        System.out.println("*** machine = " + machine);
         Model model = new Model();
         int buttonCount = machine.buttons.size();
         // create a variable for each buttonpresscount
@@ -179,23 +76,20 @@ public class Day10Part2 {
             }
         }
         // minimize total buttonpresses
-        ArExpression totalButtonPresses = as[0];
+        ArExpression temp = as[0];
         for (int i = 1; i < as.length; i++) {
-            totalButtonPresses = totalButtonPresses.add(as[i]);
+            temp = temp.add(as[i]);
         }
-        IntVar totalButtonPressesIntVar = totalButtonPresses.intVar();
-        model.setObjective(Model.MINIMIZE, totalButtonPressesIntVar);
-//        System.out.println("*** model = " + model);
+        IntVar totalButtonPresses = temp.intVar();
+        model.setObjective(Model.MINIMIZE, totalButtonPresses);
         // solve
         Solver solver = model.getSolver();
-        Solution solution = solver.findOptimalSolution(totalButtonPressesIntVar, Model.MINIMIZE);
-//        Solution solution = solver.findSolution();
+        Solution solution = solver.findOptimalSolution(totalButtonPresses, Model.MINIMIZE);
         if (solution == null) {
-            System.out.println("ERROR no solutions for " + machine);
+            throw new IllegalStateException("No solution found! for machine " + machine);
         } else {
-            return solution.getIntVal(totalButtonPressesIntVar);
+            return solution.getIntVal(totalButtonPresses);
         }
-        return 0;
     }
 
     private static List<Integer> parseJoltages(String line) {
