@@ -15,22 +15,10 @@
     </properties>
 
     <dependencies>
-        <!-- hipparchus is a fork of commons-math -->
-        <dependency>
-            <groupId>org.hipparchus</groupId>
-            <artifactId>hipparchus-core</artifactId>
-            <version>4.0.2</version>
-        </dependency>
         <dependency>
             <groupId>org.choco-solver</groupId>
             <artifactId>choco-solver</artifactId>
             <version>4.10.14</version>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <version>6.0.1</version>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>
