@@ -46,7 +46,7 @@ public class Day10Part2 {
 //                "[#...#.##.] (0,1,2,3,5,7,8) (4,5,6,7) (0,1,5,6,7,8) (0,3,5,6,7,8) (0,2,3,5,7) (0,2,4,6,7,8) (0,1,3,4,7,8) (0,1,2,3,6) (0,1,6) (0,1,3,4,5,6,8) (0,2,3,4,6,7,8) {294,255,50,80,58,243,262,271,267}"
 //        );
 
-        int sum = lines.stream()
+        int sum = lines.parallelStream()
                 .map(Day10Part2::parseMachine)
                 .mapToInt(Day10Part2::determineMinimalButtonPressesAndLogSlowOnes)
                 .sum();
@@ -77,25 +77,34 @@ public class Day10Part2 {
         return result;
     }
 
-    private static int determineMinimalButtonPresses(Machine machine) {
-        int simpleSolution = tryToSolveWithDecompositionSolver(machine);
-        int realSolution = solveWithConstrainSolver(machine);
+    static int determineMinimalButtonPresses(Machine machine) {
+        List<Integer> probableSolutions = tryToSolveWithDecompositionSolver(machine);
+//        if (probableSolutions.size() > 10) {
+//            int optimisticSolution = solveWithConstrainSolver(machine, probableSolutions.subList(0, 10));
+//            if (optimisticSolution != -1) {
+////                System.out.println("optimisticSolution = " + optimisticSolution);
+//                return optimisticSolution;
+//            }
+//        }
+        int realSolution = solveWithConstrainSolver(machine, probableSolutions);
+//        System.out.println("realSolution = " + realSolution);
 
-        if (simpleSolution != -1 && simpleSolution != realSolution) {
-            System.out.println("complicated machine = " + machine);
-            System.out.println(" simpleSolution = " + simpleSolution);
-            System.out.println(" realSolution = " + realSolution);
-        }
+//        if (simpleSolution != -1 && simpleSolution != realSolution) {
+//            System.out.println("complicated machine = " + machine);
+//            System.out.println(" simpleSolution = " + simpleSolution);
+//            System.out.println(" realSolution = " + realSolution);
+//        }
         return realSolution;
     }
 
-    static int tryToSolveWithDecompositionSolver(Machine machine) {
+    static List<Integer> tryToSolveWithDecompositionSolver(Machine machine) {
 
         Stopwatch stopwatch = Stopwatch.start();
 
         // This is fast but will only solve 17 of the machines
         int buttonCount = machine.buttons.size();
         int joltageCount = machine.joltages.size();
+        boolean useLU = joltageCount + 1 == buttonCount;
 
         // Create A
         double[][] a = createMatrixA(machine, joltageCount, buttonCount);
@@ -105,24 +114,27 @@ public class Day10Part2 {
 
         // Solve matrix
         int firstGuess = machine.joltages.stream().mapToInt(it -> it).max().orElseThrow();
+//        System.out.println("firstGuess = " + firstGuess);
         int lastGuess = machine.joltages.stream().mapToInt(it -> it).sum();
+//        System.out.println("lastGuess = " + lastGuess);
 
         DecompositionSolver solver;
         try {
             // using other solvers than LUDecomposition yields unreliable results
-            if (joltageCount + 1 == buttonCount) {
+            if (useLU) {
                 solver = new LUDecomposition(new Array2DRowRealMatrix(a)).getSolver();
             } else {
                 solver = new SingularValueDecomposition(new Array2DRowRealMatrix(a)).getSolver();
             }
         } catch (MathIllegalArgumentException e) {
             System.out.println("Could not create solver: " + e.getMessage());
-            return -1;
+            return List.of();
         }
+        List<Integer> results = new ArrayList<>();
         for (int n = firstGuess; n <= lastGuess; n++) {
             if (stopwatch.hasExceeded(Duration.ofSeconds(1))) {
                 System.out.println("Timeout");
-                return -1;
+                return List.of();
             }
             b[joltageCount] = n;
             double[] solution;
@@ -135,13 +147,25 @@ public class Day10Part2 {
             // the solution should contain only integers (or almost integers)
             // the solution (converted to ints) should be correct (A*X=B)
             // rint is faster than round
-            if (Arrays.stream(solution).allMatch(it -> it >= -1 * 1e-11
-                    && Math.abs(it - Math.rint(it)) < 1e-11)
-                    && aTimesXIsB(a, solution, b)) {
-                return n;
+            if (useLU) {
+                if (Arrays.stream(solution).allMatch(it -> it >= -1 * 1e-11
+                        && Math.abs(it - Math.rint(it)) < 1e-11)
+                        && aTimesXIsB(a, solution, b)) {
+                    return List.of(n);
+                }
+            } else {
+//                if (Arrays.stream(solution).allMatch(it -> it >= -1 * 1e-11
+//                        && Math.abs(it - Math.rint(it)) < 1e-11)
+//                        && aTimesXIsB(a, solution, b)) {
+//                    return List.of(n);
+//                }
+
+                results.add(n);
+//                results.add(n);
             }
         }
-        return -1;
+//        return List.of();
+        return results;
     }
 
     private static double[][] createMatrixA(Machine machine, int joltageCount, int buttonCount) {
@@ -187,7 +211,11 @@ public class Day10Part2 {
         return true;
     }
 
-    private static int solveWithConstrainSolver(Machine machine) {
+    private static int solveWithConstrainSolver(Machine machine, List<Integer> probableSolutions) {
+        if (probableSolutions.size() == 1) {
+            return probableSolutions.getFirst();
+        }
+
         // Begin solving with Choco
         Model model = new Model();
         int buttonCount = machine.buttons.size();
@@ -219,13 +247,22 @@ public class Day10Part2 {
         }
         // minimize total buttonpresses
         IntVar totalButtonPresses = model.sum("totalButtonPresses", as);
-        model.setObjective(Model.MINIMIZE, totalButtonPresses);
+        if (!probableSolutions.isEmpty()) {
+//            System.out.println("probableSolutions.size() = " + probableSolutions.size());
+//            System.out.println("probableSolutions = " + probableSolutions);
+            IntVar probableTotalButtonPresses = model.intVar(
+                    "probableTotalButtonPresses",
+                    probableSolutions.stream().mapToInt(it -> it).toArray());
+            model.arithm(totalButtonPresses, "=", probableTotalButtonPresses).post();
+//            return probableSolutions.getFirst();
+        }
         // solve
         Solver solver = model.getSolver();
         Solution solution = solver.findOptimalSolution(totalButtonPresses, Model.MINIMIZE);
 //        System.out.println("solution = " + solution);
         if (solution == null) {
-            throw new IllegalStateException("No solution found! for machine " + machine);
+            System.out.println("No solution found! for machine " + machine + " with probableSolutions " + probableSolutions);
+            return -1;
         } else {
             return solution.getIntVal(totalButtonPresses);
         }
