@@ -2,6 +2,7 @@ package spike;
 
 import org.chocosolver.solver.Model;
 import org.chocosolver.solver.ParallelPortfolio;
+import org.chocosolver.solver.Settings;
 import org.chocosolver.solver.Solver;
 import org.chocosolver.solver.variables.IntVar;
 import org.hipparchus.exception.MathIllegalArgumentException;
@@ -26,6 +27,10 @@ import static java.util.Objects.requireNonNull;
 /// | true                     | false                  |    164.021 |
 /// | false                    | true                   |    319.763 |
 /// | true                     | true                   |    262.883 |
+///
+/// true, false, hybrid=0b00, 5.0.0-beta.1 = 169.744
+/// true, false, hybrid=0b01, 5.0.0-beta.1 = 145.607
+/// true, false, hybrid=0b10, 5.0.0-beta.1 = 146.567
 public class Day10Part2 {
 
     // The DecompositionSolver finds the exact solution for 37 of the machines and it reduces the search range of 77 more.
@@ -34,6 +39,10 @@ public class Day10Part2 {
 
     // it seemed like a good idea to use ParallelPortfolio, but unfortunately, it isn't faster
     private static final boolean USE_PARALLEL_PORTFOLIO = false;
+
+    // use either of these for a 15% speedboost
+    private static final boolean USE_HYBRID_01 = true;
+    private static final boolean USE_HYBRID_10 = false;
 
     private static final Pattern MACHINE_JOLTAGE_PATTERN = Pattern.compile("\\{([0-9,]+)}");
     private static final Pattern MACHINE_BUTTON_PATTERN = Pattern.compile("\\(([0-9,]+)\\)");
@@ -195,7 +204,14 @@ public class Day10Part2 {
     }
 
     private static Model createModel(Machine machine, DecomposeResult decomposeResult) {
-        Model model = new Model("model");
+        Settings settings = Settings.prod();
+        if (USE_HYBRID_01) {
+            settings = settings.setHybridizationOfPropagationEngine((byte) 0b01);
+        }
+        if (USE_HYBRID_10) {
+            settings = settings.setHybridizationOfPropagationEngine((byte) 0b10);
+        }
+        Model model = new Model("model", settings);
         int buttonCount = machine.buttons.size();
         // create a variable for each buttonpresscount
         IntVar[] as = new IntVar[buttonCount];
