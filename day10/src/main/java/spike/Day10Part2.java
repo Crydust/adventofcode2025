@@ -4,6 +4,7 @@ import org.chocosolver.solver.Model;
 import org.chocosolver.solver.ParallelPortfolio;
 import org.chocosolver.solver.Settings;
 import org.chocosolver.solver.Solver;
+import org.chocosolver.solver.search.strategy.Search;
 import org.chocosolver.solver.variables.IntVar;
 import org.hipparchus.exception.MathIllegalArgumentException;
 import org.hipparchus.linear.*;
@@ -43,6 +44,9 @@ public class Day10Part2 {
     // use either of these for a 15% speedboost
     private static final boolean USE_HYBRID_01 = true;
     private static final boolean USE_HYBRID_10 = false;
+
+    // 35% speedboost
+    public static final boolean USE_ACTIVITY_BASED_SEARCH = true;
 
     private static final Pattern MACHINE_JOLTAGE_PATTERN = Pattern.compile("\\{([0-9,]+)}");
     private static final Pattern MACHINE_BUTTON_PATTERN = Pattern.compile("\\(([0-9,]+)\\)");
@@ -196,6 +200,9 @@ public class Day10Part2 {
         } else {
             var model = createModel(machine, decomposeResult);
             Solver solver = model.getSolver();
+//            solver.printVersion();
+//            solver.printFeatures();
+//            solver.verboseSolving(10_000);
             while (solver.solve()) {
                 // NOOP
             }
@@ -204,6 +211,7 @@ public class Day10Part2 {
     }
 
     private static Model createModel(Machine machine, DecomposeResult decomposeResult) {
+//        Settings settings = Settings.dev();
         Settings settings = Settings.prod();
         if (USE_HYBRID_01) {
             settings = settings.setHybridizationOfPropagationEngine((byte) 0b01);
@@ -246,6 +254,9 @@ public class Day10Part2 {
             model.arithm(totalButtonPresses, "<=", upperBound).post();
         }
         model.setObjective(Model.MINIMIZE, totalButtonPresses);
+        if (USE_ACTIVITY_BASED_SEARCH) {
+            model.getSolver().setSearch(Search.activityBasedSearch(as));
+        }
         return model;
     }
     //endregion
