@@ -4,7 +4,11 @@ import org.chocosolver.solver.Model;
 import org.chocosolver.solver.ParallelPortfolio;
 import org.chocosolver.solver.Settings;
 import org.chocosolver.solver.Solver;
+import org.chocosolver.solver.search.strategy.BlackBoxConfigurator;
 import org.chocosolver.solver.search.strategy.Search;
+import org.chocosolver.solver.search.strategy.SearchParams;
+import org.chocosolver.solver.search.strategy.selectors.values.IntValueSelector;
+import org.chocosolver.solver.search.strategy.strategy.AbstractStrategy;
 import org.chocosolver.solver.variables.IntVar;
 import org.hipparchus.exception.MathIllegalArgumentException;
 import org.hipparchus.linear.*;
@@ -16,54 +20,86 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
-/// | USE_DECOMPOSITION_SOLVER | USE_PARALLEL_PORTFOLIO | Total time |
-/// | ------------------------ | ---------------------- | ---------: |
-/// | false                    | false                  |    169.571 |
-/// | true                     | false                  |    164.021 |
-/// | false                    | true                   |    319.763 |
-/// | true                     | true                   |    262.883 |
-///
-/// true, false, hybrid=0b00, 5.0.0-beta.1 = 169.744
-/// true, false, hybrid=0b01, 5.0.0-beta.1 = 145.607
-/// true, false, hybrid=0b10, 5.0.0-beta.1 = 146.567
 public class Day10Part2 {
 
     // The DecompositionSolver finds the exact solution for 37 of the machines and it reduces the search range of 77 more.
     // This yields a dismal 1% performance improvement.
-    private static final boolean USE_DECOMPOSITION_SOLVER = true;
+    private static boolean USE_DECOMPOSITION_SOLVER = true;
 
     // it seemed like a good idea to use ParallelPortfolio, but unfortunately, it isn't faster
-    private static final boolean USE_PARALLEL_PORTFOLIO = false;
+    private static boolean USE_PARALLEL_PORTFOLIO = false;
 
     // use either of these for a 15% speedboost
-    private static final boolean USE_HYBRID_01 = true;
-    private static final boolean USE_HYBRID_10 = false;
+    private static boolean USE_HYBRID_01 = true;
+    private static boolean USE_HYBRID_10 = false;
 
     // 35% speedboost
-    public static final boolean USE_ACTIVITY_BASED_SEARCH = true;
+    public static boolean USE_ACTIVITY_BASED_SEARCH = true;
+
+    // fastest solver when using ParallelPortfolio
+    public static boolean USE_BB5 = true;
 
     private static final Pattern MACHINE_JOLTAGE_PATTERN = Pattern.compile("\\{([0-9,]+)}");
     private static final Pattern MACHINE_BUTTON_PATTERN = Pattern.compile("\\(([0-9,]+)\\)");
 
     static void main() throws Exception {
-        Stopwatch stopwatch = Stopwatch.start();
 //        List<String> lines = readInputLines("/example.txt");
         List<String> lines = readInputLines("/input.txt");
 
-        // using parallelStream is a no-brainer and speeds things up a lot
-        int sum = lines.parallelStream()
-                .map(Day10Part2::parseMachine)
-                .mapToInt(Day10Part2::determineMinimalButtonPresses)
-                .sum();
+        System.out.println("| USE_DECOMPOSITION_SOLVER | USE_PARALLEL_PORTFOLIO | USE_HYBRID_01 | USE_ACTIVITY_BASED_SEARCH | USE_BB5 | Total time |");
+        System.out.println("|---|---|---|---|---|---|");
+        for (int i = 0; i < 5; i++) {
+            for (int mask = 0; mask < (1 << 5); mask++) {
+                boolean useDecompositionSolver = (mask & (1 << 0)) != 0;
+                boolean useParallelPortfolio = (mask & (1 << 1)) != 0;
+                boolean useHybrid01 = (mask & (1 << 2)) != 0;
+                boolean useActivityBasedSearch = (mask & (1 << 3)) != 0;
+                boolean useBB5 = (mask & (1 << 4)) != 0;
+                if (useParallelPortfolio && useBB5) {
+                    // these are opposites
+                    continue;
+                }
 
-        System.out.println(stopwatch.stop());
-        IO.println("sum = " + sum);
+                // If these are your actual global/static config flags, assign them here:
+                USE_DECOMPOSITION_SOLVER = useDecompositionSolver;
+                USE_PARALLEL_PORTFOLIO = useParallelPortfolio;
+                USE_HYBRID_01 = useHybrid01;
+                USE_ACTIVITY_BASED_SEARCH = useActivityBasedSearch;
+                USE_BB5 = useBB5;
+
+                Stopwatch stopwatch = Stopwatch.start();
+
+                // --- measured work (keep your existing computation here) ---
+                int sum = lines.parallelStream()
+                        .map(Day10Part2::parseMachine)
+                        .mapToInt(Day10Part2::determineMinimalButtonPresses)
+                        .sum();
+                System.out.println("#sum = " + sum);
+                // -----------------------------------------------------------
+
+                String totalTime = stopwatch.stop().toString(); // e.g. "Total time: 123 ms"
+
+                System.out.printf(
+                        "| %s | %s | %s | %s | %s  | %s |%n",
+                        useDecompositionSolver,
+                        useParallelPortfolio,
+                        useHybrid01,
+                        useActivityBasedSearch,
+                        useBB5,
+                        totalTime
+                );
+                Thread.sleep(5000);
+            }
+            Thread.sleep(5000);
+        }
         // 16757
     }
 
@@ -115,8 +151,8 @@ public class Day10Part2 {
             // the solution (converted to ints) should be correct (A*X=B)
             // rint is faster than round
             if (Arrays.stream(solution).allMatch(it -> it >= -1 * 1e-11
-                    && Math.abs(it - Math.rint(it)) < 1e-11)
-                    && aTimesXIsB(a, solution, b)) {
+                                                       && Math.abs(it - Math.rint(it)) < 1e-11)
+                && aTimesXIsB(a, solution, b)) {
                 if (isSquareMatrix || n == lowerBound) {
                     return new ExactResult(n);
                 } else {
@@ -256,6 +292,23 @@ public class Day10Part2 {
         model.setObjective(Model.MINIMIZE, totalButtonPresses);
         if (USE_ACTIVITY_BASED_SEARCH) {
             model.getSolver().setSearch(Search.activityBasedSearch(as));
+        }
+        if (USE_BB5) {
+            BlackBoxConfigurator bb = BlackBoxConfigurator.init();
+            bb.setRestartPolicy(SearchParams.Restart.GEOMETRIC, 10, 1.05, 50_000, true);
+            bb.setNogoodOnRestart(true);
+            bb.setRestartOnSolution(true);
+            bb.setExcludeViews(false);
+            BiFunction<IntVar[], IntValueSelector, AbstractStrategy<IntVar>> intVarSel;
+            SearchParams.ValSelConf intValConf = new SearchParams.ValSelConf(
+                    SearchParams.ValueSelection.MIN, true, 16, true);
+            Function<Model, IntValueSelector> intValSel = intValConf.make();
+            SearchParams.VarSelConf intVarConf = new SearchParams.VarSelConf(
+                    SearchParams.VariableSelection.DOMWDEG_CACD, 32);
+            intVarSel = intVarConf.make();
+            bb.setIntVarStrategy((vars) -> intVarSel.apply(vars, intValSel.apply(model)));
+            bb.setMetaStrategy(m -> Search.lastConflict(m, 2));
+            bb.make(model);
         }
         return model;
     }

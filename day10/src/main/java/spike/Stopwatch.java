@@ -24,7 +24,7 @@ final class Stopwatch {
 
     @Override
     public String toString() {
-        return "Total time: " + TimeUnit.NANOSECONDS.toMillis(currentEndTime() - startTime) + " ms";
+        return TimeUnit.NANOSECONDS.toMillis(currentEndTime() - startTime) + " ms";
     }
 
     public boolean hasExceeded(Duration duration) {
