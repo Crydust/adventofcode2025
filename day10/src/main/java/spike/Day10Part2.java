@@ -32,74 +32,37 @@ public class Day10Part2 {
 
     // The DecompositionSolver finds the exact solution for 37 of the machines and it reduces the search range of 77 more.
     // This yields a dismal 1% performance improvement.
-    private static boolean USE_DECOMPOSITION_SOLVER = true;
+    private static final boolean USE_DECOMPOSITION_SOLVER = true;
 
     // it seemed like a good idea to use ParallelPortfolio, but unfortunately, it isn't faster
-    private static boolean USE_PARALLEL_PORTFOLIO = false;
+    private static final boolean USE_PARALLEL_PORTFOLIO = false;
 
     // use either of these for a 15% speedboost
-    private static boolean USE_HYBRID_01 = true;
-    private static boolean USE_HYBRID_10 = false;
+    private static final boolean USE_HYBRID_01 = false;
+    private static final boolean USE_HYBRID_10 = false;
 
     // 35% speedboost
-    public static boolean USE_ACTIVITY_BASED_SEARCH = true;
+    private static final boolean USE_ACTIVITY_BASED_SEARCH = false;
 
-    // fastest solver when using ParallelPortfolio
-    public static boolean USE_BB5 = true;
+    // fastest solver when using ParallelPortfolio huge speedboost
+    // best combo: USE_BB5 + USE_DECOMPOSITION_SOLVER
+    // best on powerfull hardware: USE_PARALLEL_PORTFOLIO (because it contains USE_BB5)
+    // second best on lowpowered hardware: USE_DECOMPOSITION_SOLVER + USE_HYBRID_01 + USE_ACTIVITY_BASED_SEARCH
+    private static final boolean USE_BB5 = true;
 
     private static final Pattern MACHINE_JOLTAGE_PATTERN = Pattern.compile("\\{([0-9,]+)}");
     private static final Pattern MACHINE_BUTTON_PATTERN = Pattern.compile("\\(([0-9,]+)\\)");
 
     static void main() throws Exception {
+        Stopwatch stopwatch = Stopwatch.start();
 //        List<String> lines = readInputLines("/example.txt");
         List<String> lines = readInputLines("/input.txt");
-
-        System.out.println("| USE_DECOMPOSITION_SOLVER | USE_PARALLEL_PORTFOLIO | USE_HYBRID_01 | USE_ACTIVITY_BASED_SEARCH | USE_BB5 | Total time |");
-        System.out.println("|---|---|---|---|---|---|");
-        for (int i = 0; i < 5; i++) {
-            for (int mask = 0; mask < (1 << 5); mask++) {
-                boolean useDecompositionSolver = (mask & (1 << 0)) != 0;
-                boolean useParallelPortfolio = (mask & (1 << 1)) != 0;
-                boolean useHybrid01 = (mask & (1 << 2)) != 0;
-                boolean useActivityBasedSearch = (mask & (1 << 3)) != 0;
-                boolean useBB5 = (mask & (1 << 4)) != 0;
-                if (useParallelPortfolio && useBB5) {
-                    // these are opposites
-                    continue;
-                }
-
-                // If these are your actual global/static config flags, assign them here:
-                USE_DECOMPOSITION_SOLVER = useDecompositionSolver;
-                USE_PARALLEL_PORTFOLIO = useParallelPortfolio;
-                USE_HYBRID_01 = useHybrid01;
-                USE_ACTIVITY_BASED_SEARCH = useActivityBasedSearch;
-                USE_BB5 = useBB5;
-
-                Stopwatch stopwatch = Stopwatch.start();
-
-                // --- measured work (keep your existing computation here) ---
-                int sum = lines.parallelStream()
-                        .map(Day10Part2::parseMachine)
-                        .mapToInt(Day10Part2::determineMinimalButtonPresses)
-                        .sum();
-                System.out.println("#sum = " + sum);
-                // -----------------------------------------------------------
-
-                String totalTime = stopwatch.stop().toString(); // e.g. "Total time: 123 ms"
-
-                System.out.printf(
-                        "| %s | %s | %s | %s | %s  | %s |%n",
-                        useDecompositionSolver,
-                        useParallelPortfolio,
-                        useHybrid01,
-                        useActivityBasedSearch,
-                        useBB5,
-                        totalTime
-                );
-                Thread.sleep(5000);
-            }
-            Thread.sleep(5000);
-        }
+        int sum = lines.parallelStream()
+                .map(Day10Part2::parseMachine)
+                .mapToInt(Day10Part2::determineMinimalButtonPresses)
+                .sum();
+        System.out.println("sum = " + sum);
+        System.out.println("totalTime = " + stopwatch.stop());
         // 16757
     }
 
@@ -294,6 +257,7 @@ public class Day10Part2 {
             model.getSolver().setSearch(Search.activityBasedSearch(as));
         }
         if (USE_BB5) {
+            BlackBoxConfigurator bb = BlackBoxConfigurator.forCSP()
             BlackBoxConfigurator bb = BlackBoxConfigurator.init();
             bb.setRestartPolicy(SearchParams.Restart.GEOMETRIC, 10, 1.05, 50_000, true);
             bb.setNogoodOnRestart(true);
