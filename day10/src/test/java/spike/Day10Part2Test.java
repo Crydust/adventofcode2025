@@ -171,7 +171,7 @@ class Day10Part2Test {
             # '[#...#.##.] (0,1,2,3,5,7,8) (4,5,6,7) (0,1,5,6,7,8) (0,3,5,6,7,8) (0,2,3,5,7) (0,2,4,6,7,8) (0,1,3,4,7,8) (0,1,2,3,6) (0,1,6) (0,1,3,4,5,6,8) (0,2,3,4,6,7,8) {294,255,50,80,58,243,262,271,267}', 298
             """)
     void name(String machine, int expected) {
-        Day10Part2.Machine m = Day10Part2.parseMachine(machine);
+        Machine m = Machine.parse(machine);
         int actual = Day10Part2.determineMinimalButtonPresses(m);
         Assertions.assertEquals(expected, actual);
     }

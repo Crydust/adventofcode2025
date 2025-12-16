@@ -3,11 +3,8 @@ package spike;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -22,11 +19,7 @@ public class Day10Part1 {
 //        List<String> lines = readInputLines("/example.txt");
         List<String> lines = readInputLines("/input.txt");
         List<Machine> machines = lines.stream()
-                .map(line -> {
-                    BitSet lights = parseLights(line);
-                    List<BitSet> buttons = parseButtons(line, lights.length());
-                    return new Machine(lights, buttons);
-                })
+                .map(Machine::parse)
                 .toList();
         int sum = 0;
         for (Machine machine : machines) {
@@ -63,40 +56,6 @@ public class Day10Part1 {
             currentLights.xor(button); // Backtrack
         }
         return false;
-    }
-
-    private static BitSet parseLights(String line) {
-        BitSet lights;
-        Matcher m = MACHINE_LIGHTS_PATTERN.matcher(line);
-        if (!m.find()) {
-            throw new IllegalArgumentException("No lights found in " + line);
-        }
-        String group = m.group(1);
-        lights = new BitSet(group.length());
-        char[] charArray = group.toCharArray();
-        for (int i = 0; i < charArray.length; i++) {
-            if (charArray[i] == '#') {
-                lights.set(i);
-            }
-        }
-        return lights;
-    }
-
-    private static List<BitSet> parseButtons(String line, int lightCount) {
-        List<BitSet> buttons = new ArrayList<>();
-        Matcher m = MACHINE_BUTTON_PATTERN.matcher(line);
-        while (m.find()) {
-            String group = m.group(1);
-            BitSet button = new BitSet(lightCount);
-            Arrays.stream(group.split(","))
-                    .mapToInt(Integer::parseInt)
-                    .forEach(button::set);
-            buttons.add(button);
-        }
-        return buttons;
-    }
-
-    record Machine(BitSet lights, List<BitSet> buttons) {
     }
 
     @SuppressWarnings("SameParameterValue")
