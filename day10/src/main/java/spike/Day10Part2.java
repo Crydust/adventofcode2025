@@ -48,7 +48,9 @@ public class Day10Part2 {
     // best combo: USE_BB5 + USE_DECOMPOSITION_SOLVER
     // best on powerfull hardware: USE_PARALLEL_PORTFOLIO (because it contains USE_BB5)
     // second best on lowpowered hardware: USE_DECOMPOSITION_SOLVER + USE_HYBRID_01 + USE_ACTIVITY_BASED_SEARCH
-    private static final boolean USE_BB5 = true;
+    private static final boolean USE_BB5 = false;
+    // might be the same as USE_BB5 but simpler to configure
+    private static final boolean USE_CSP = true;
 
     private static final Pattern MACHINE_JOLTAGE_PATTERN = Pattern.compile("\\{([0-9,]+)}");
     private static final Pattern MACHINE_BUTTON_PATTERN = Pattern.compile("\\(([0-9,]+)\\)");
@@ -257,7 +259,6 @@ public class Day10Part2 {
             model.getSolver().setSearch(Search.activityBasedSearch(as));
         }
         if (USE_BB5) {
-            BlackBoxConfigurator bb = BlackBoxConfigurator.forCSP()
             BlackBoxConfigurator bb = BlackBoxConfigurator.init();
             bb.setRestartPolicy(SearchParams.Restart.GEOMETRIC, 10, 1.05, 50_000, true);
             bb.setNogoodOnRestart(true);
@@ -272,6 +273,10 @@ public class Day10Part2 {
             intVarSel = intVarConf.make();
             bb.setIntVarStrategy((vars) -> intVarSel.apply(vars, intValSel.apply(model)));
             bb.setMetaStrategy(m -> Search.lastConflict(m, 2));
+            bb.make(model);
+        }
+        if (USE_CSP) {
+            BlackBoxConfigurator bb = BlackBoxConfigurator.forCSP();
             bb.make(model);
         }
         return model;
