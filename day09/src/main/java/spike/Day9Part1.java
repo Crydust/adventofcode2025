@@ -27,6 +27,7 @@ public class Day9Part1 {
             }
         }
         System.out.println("maxArea = " + maxArea);
+        // 4769758290
     }
 
     private record Point2dLong(long x, long y) {
