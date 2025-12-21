@@ -18,8 +18,8 @@ public class Day12Part1 {
     private static final Pattern REGION_PATTERN = Pattern.compile("^([0-9]+)x([0-9]+): ([0-9]+) ([0-9]+) ([0-9]+) ([0-9]+) ([0-9]+) ([0-9]+)$");
 
     static void main() throws Exception {
-        List<String> lines = readInputLines("/example.txt").stream()
-//        List<String> lines = readInputLines("/input.txt").stream()
+//        List<String> lines = readInputLines("/example.txt").stream()
+        List<String> lines = readInputLines("/input.txt").stream()
                 .toList();
 
         Grid[] shapes = readShapes(lines);
@@ -29,6 +29,7 @@ public class Day12Part1 {
                 .filter(it -> it.canFitPresents(shapes))
                 .count();
         System.out.println("count = " + count);
+        // 472
     }
 
     private static Grid[] readShapes(List<String> lines) {
@@ -87,13 +88,15 @@ public class Day12Part1 {
 
     private record Region(Grid grid, int[] shapeCounts) {
         public boolean canFitPresents(Grid[] shapes) {
-            for (int i = 0; i < shapeCounts.length; i++) {
-                int shapeCount = shapeCounts[i];
-                Grid shape = shapes[i];
-
+            // this is a bit too simple, but let's try anyway
+            int totalNeeded = 0;
+            for (int i = 0; i < shapes.length; i++) {
+                totalNeeded += (shapes[i].square.cardinality() * shapeCounts[i]);
             }
-            return false;
+            int area = grid.area();
+            return totalNeeded <= area;
         }
+
     }
 
     private static final class Grid {
@@ -132,6 +135,10 @@ public class Day12Part1 {
                 sb.append('\n');
             }
             return sb.toString();
+        }
+
+        private int area() {
+            return rows * columns;
         }
     }
 
