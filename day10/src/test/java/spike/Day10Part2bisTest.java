@@ -2,8 +2,6 @@ package spike;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.Arrays;
-
 import static org.junit.jupiter.api.Assertions.*;
 import static spike.Day10Part2bis.*;
 
@@ -29,17 +27,10 @@ class Day10Part2bisTest {
     @Test
     void shouldCreateMatrixB() {
         Machine machine = Machine.parse("[.##.] (3) (1,3) (2) (2,3) (0,2) (0,1) {3,5,4,7}");
-        double[][] matrixB = createMatrixB(machine);
-        double[][] expected = {
-                {3},
-                {5},
-                {4},
-                {7},
-        };
+        double[] matrixB = createMatrixB(machine);
+        double[] expected = {3, 5, 4, 7};
         for (int i = 0; i < expected.length; i++) {
-            for (int j = 0; j < expected[i].length; j++) {
-                assertEquals(expected[i][j], matrixB[i][j]);
-            }
+            assertEquals(expected[i], matrixB[i]);
         }
     }
 
@@ -51,12 +42,7 @@ class Day10Part2bisTest {
                 {0, 0, 1, 1, 1, 0},
                 {1, 1, 0, 1, 0, 0},
         };
-        double[][] matrixB = {
-                {3},
-                {5},
-                {4},
-                {7},
-        };
+        double[] matrixB = {3, 5, 4, 7};
         double[] matrixX = {
                 1, 3, 0, 3, 1, 2.0
         };
@@ -71,18 +57,11 @@ class Day10Part2bisTest {
                 {0, 0, 1, 1, 1, 0},
                 {1, 1, 0, 1, 0, 0},
         };
-        double[][] matrixB = {
-                {3},
-                {5},
-                {4},
-                {7},
-        };
+        double[] matrixB = {3, 5, 4, 7};
         double[] expected = {
                 1, 3, 0, 3, 1, 2.0
         };
         double[] matrixX = solveForX(matrixA, matrixB);
-        System.out.println("expected = " + Arrays.toString(expected));
-        System.out.println("matrixX = " + Arrays.toString(matrixX));
         assertAll(
                 () -> assertEquals(expected[0], matrixX[0], "expected[" + 0 + "]"),
                 () -> assertEquals(expected[1], matrixX[1], "expected[" + 1 + "]"),

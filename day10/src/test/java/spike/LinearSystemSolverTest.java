@@ -1,12 +1,12 @@
 package spike;
 
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static spike.Day10Part2bis.*;
+import static spike.Day10Part2bis.solveForX;
 
 /**
  * Unit tests for the linear system solver helper methods.
@@ -15,13 +15,15 @@ import static spike.Day10Part2bis.*;
 @DisplayName("Linear System Solver Tests")
 class LinearSystemSolverTest {
 
+    public static final double EPSILON = 1e-11;
+
     @Test
     @DisplayName("Create augmented matrix from A and b")
     void testCreateAugmentedMatrix() {
         double[][] a = {{1, 2}, {3, 4}};
-        double[][] b = {{5}, {6}};
+        double[] b = {5, 6};
 
-        double[][] result = createAugmentedMatrix(a, b);
+        double[][] result = LinearSolver.createAugmentedMatrix(a, b);
 
         assertEquals(2, result.length, "Should have 2 rows");
         assertEquals(3, result[0].length, "Should have 3 columns (2 from A + 1 from b)");
@@ -38,7 +40,7 @@ class LinearSystemSolverTest {
     void testSwapRows() {
         double[][] matrix = {{1, 2}, {3, 4}};
 
-        swapRows(matrix, 0, 1);
+        LinearSolver.swapRows(matrix, 0, 1);
 
         assertEquals(3, matrix[0][0], "Row 0 should now have values from original row 1");
         assertEquals(4, matrix[0][1]);
@@ -51,10 +53,10 @@ class LinearSystemSolverTest {
     void testScalePivotRow() {
         double[][] matrix = {{2, 4}, {6, 8}};
 
-        scalePivotRow(matrix, 0, 0);
+        LinearSolver.scalePivotRow(matrix, 0, 0);
 
-        assertEquals(1.0, matrix[0][0], 1e-9, "Pivot element should be 1");
-        assertEquals(2.0, matrix[0][1], 1e-9, "Other elements should be scaled proportionally");
+        assertEquals(1.0, matrix[0][0], EPSILON, "Pivot element should be 1");
+        assertEquals(2.0, matrix[0][1], EPSILON, "Other elements should be scaled proportionally");
     }
 
     @Test
@@ -66,20 +68,20 @@ class LinearSystemSolverTest {
                 {1, 1, 1}
         };
 
-        eliminateLeadColumn(matrix, 0, 0, 3);
+        LinearSolver.eliminateLeadColumn(matrix, 0, 0, 3);
 
         // The pivot row (row 0) should remain unchanged
-        assertEquals(1.0, matrix[0][0], 1e-9, "Pivot row column 0 should remain 1");
-        assertEquals(2.0, matrix[0][1], 1e-9, "Pivot row should not change");
+        assertEquals(1.0, matrix[0][0], EPSILON, "Pivot row column 0 should remain 1");
+        assertEquals(2.0, matrix[0][1], EPSILON, "Pivot row should not change");
 
         // Elements below pivot in column 0 should be eliminated
-        assertEquals(0.0, matrix[1][0], 1e-9, "Element in pivot column should be eliminated from row 1");
-        assertEquals(0.0, matrix[2][0], 1e-9, "Element in pivot column should be eliminated from row 2");
+        assertEquals(0.0, matrix[1][0], EPSILON, "Element in pivot column should be eliminated from row 1");
+        assertEquals(0.0, matrix[2][0], EPSILON, "Element in pivot column should be eliminated from row 2");
 
         // But the rest of the row should be modified accordingly
         // Row 1 (originally [2,4,6]): after elimination should be [0, 0, 0] (row 1 - 2*row 0)
-        assertEquals(0.0, matrix[1][1], 1e-9, "Row 1 column 1 should be 0");
-        assertEquals(0.0, matrix[1][2], 1e-9, "Row 1 column 2 should be 0");
+        assertEquals(0.0, matrix[1][1], EPSILON, "Row 1 column 1 should be 0");
+        assertEquals(0.0, matrix[1][2], EPSILON, "Row 1 column 2 should be 0");
     }
 
     @Test
@@ -91,7 +93,7 @@ class LinearSystemSolverTest {
                 {0, 0, 4}
         };
 
-        int pivotRow = findPivotRow(matrix, 0, 1, 3);
+        int pivotRow = LinearSolver.findPivotRow(matrix, 0, 1, 3);
 
         assertEquals(1, pivotRow, "Should find row with non-zero at column 1");
     }
@@ -105,7 +107,7 @@ class LinearSystemSolverTest {
                 {0, 0, 4}
         };
 
-        int pivotRow = findPivotRow(matrix, 0, 1, 3);
+        int pivotRow = LinearSolver.findPivotRow(matrix, 0, 1, 3);
 
         assertEquals(-1, pivotRow, "Should return -1 when no pivot found");
     }
@@ -122,7 +124,7 @@ class LinearSystemSolverTest {
                 {0, 0, 0, 0, 0, 0, 0}   // zero row
         };
 
-        int[] freeVars = identifyFreeVariables(aug, 6);
+        int[] freeVars = LinearSolver.identifyFreeVariables(aug, 6);
 
         assertEquals(3, freeVars.length, "Should have 3 free variables (columns 2, 4, 5)");
         assertTrue(Arrays.stream(freeVars).anyMatch(i -> i == 2), "Column 2 should be free");
@@ -137,9 +139,9 @@ class LinearSystemSolverTest {
         double[] invalidNegative = {-1.0, 2.0, 3.0};
         double[] invalidNonInteger = {1.5, 2.0, 3.0};
 
-        assertTrue(isValidIntegerSolution(validSolution), "Should accept positive integers");
-        assertFalse(isValidIntegerSolution(invalidNegative), "Should reject negative values");
-        assertFalse(isValidIntegerSolution(invalidNonInteger), "Should reject non-integers");
+        assertTrue(LinearSolver.isValidIntegerSolution(validSolution), "Should accept positive integers");
+        assertFalse(LinearSolver.isValidIntegerSolution(invalidNegative), "Should reject negative values");
+        assertFalse(LinearSolver.isValidIntegerSolution(invalidNonInteger), "Should reject non-integers");
     }
 
     @Test
@@ -147,10 +149,10 @@ class LinearSystemSolverTest {
     void testEvaluateSolution() {
         double[] x = {1.0, 2.0, 3.0};
 
-        Solution sol = evaluateSolution(x);
+        LinearSolver.Solution sol = LinearSolver.evaluateSolution(x);
 
-        assertEquals(6, sol.sum, "Sum should be 1+2+3=6");
-        assertEquals(14, sol.sumSq, "Sum of squares should be 1+4+9=14");
+        assertEquals(6, sol.sum(), "Sum should be 1+2+3=6");
+        assertEquals(14, sol.sumSq(), "Sum of squares should be 1+4+9=14");
     }
 
     @Test
@@ -162,28 +164,28 @@ class LinearSystemSolverTest {
         // Expected sequence: [0,0]?[1,0]?[2,0]?[0,1]?[1,1]?[2,1]?[0,2]?[1,2]?[2,2]?reset to [0,0]
 
         // Increment 1: [0,0] -> [1,0]
-        assertTrue(incrementFreeValues(values, 3), "Should return true on increment 1");
+        assertTrue(LinearSolver.incrementFreeValues(values, 3), "Should return true on increment 1");
         assertEquals(1, values[0]);
         assertEquals(0, values[1]);
 
         // Increment 2: [1,0] -> [2,0]
-        assertTrue(incrementFreeValues(values, 3), "Should return true on increment 2");
+        assertTrue(LinearSolver.incrementFreeValues(values, 3), "Should return true on increment 2");
         assertEquals(2, values[0]);
         assertEquals(0, values[1]);
 
         // Increment 3: [2,0] -> [0,1] (wrap around on i=0)
-        assertTrue(incrementFreeValues(values, 3), "Should return true on increment 3");
+        assertTrue(LinearSolver.incrementFreeValues(values, 3), "Should return true on increment 3");
         assertEquals(0, values[0]);
         assertEquals(1, values[1]);
 
         // Continue through remaining combinations
         for (int i = 0; i < 5; i++) {
-            assertTrue(incrementFreeValues(values, 3), "Should continue returning true");
+            assertTrue(LinearSolver.incrementFreeValues(values, 3), "Should continue returning true");
         }
 
         // After 9 total increments from [0,0], we should be at [2,2]
         // Now increment should wrap back to [0,0] and return false
-        boolean result = incrementFreeValues(values, 3);
+        boolean result = LinearSolver.incrementFreeValues(values, 3);
         assertFalse(result, "Should return false when wrapping around all values");
         assertEquals(0, values[0], "Should reset to 0");
         assertEquals(0, values[1], "Should reset to 0");
@@ -197,8 +199,8 @@ class LinearSystemSolverTest {
                 {1, 0, 0, 3}
         };
 
-        int pivot0 = findPivotInRow(aug, 0, 3);
-        int pivot1 = findPivotInRow(aug, 1, 3);
+        int pivot0 = LinearSolver.findPivotInRow(aug, 0, 3);
+        int pivot1 = LinearSolver.findPivotInRow(aug, 1, 3);
 
         assertEquals(1, pivot0, "Should find pivot at column 1 in row 0");
         assertEquals(0, pivot1, "Should find pivot at column 0 in row 1");
@@ -214,10 +216,10 @@ class LinearSystemSolverTest {
         int[] freeVars = {1}; // x1 is free
         int[] freeVals = {2};  // Set x1 = 2
 
-        double[] result = tryFreeVariableAssignment(aug, freeVars, freeVals, 2, 1);
+        double[] result = LinearSolver.tryFreeVariableAssignment(aug, freeVars, freeVals, 2, 1);
 
-        assertEquals(1.0, result[0], 1e-9, "x0 should be 1 (3 - 2)");
-        assertEquals(2.0, result[1], 1e-9, "x1 should be 2 (free variable)");
+        assertEquals(1.0, result[0], EPSILON, "x0 should be 1 (3 - 2)");
+        assertEquals(2.0, result[1], EPSILON, "x1 should be 2 (free variable)");
     }
 
     @Test
@@ -229,15 +231,15 @@ class LinearSystemSolverTest {
                 {0, 1, 2}
         };
 
-        reduceToRREF(aug);
+        LinearSolver.reduceToRREF(aug);
 
         // After RREF:
         // Row 0: should have leading 1 at column 0
         // Row 1: should have leading 1 at column 1
         // Column 0 should have [1, 0] pattern
-        assertEquals(1.0, aug[0][0], 1e-9, "First pivot should be 1");
-        assertEquals(0.0, aug[1][0], 1e-9, "Should have 0 below pivot");
-        assertEquals(1.0, aug[1][1], 1e-9, "Second pivot should be 1");
+        assertEquals(1.0, aug[0][0], EPSILON, "First pivot should be 1");
+        assertEquals(0.0, aug[1][0], EPSILON, "Should have 0 below pivot");
+        assertEquals(1.0, aug[1][1], EPSILON, "Second pivot should be 1");
     }
 
     @Test
@@ -254,12 +256,7 @@ class LinearSystemSolverTest {
                 {0, 0, 1, 1, 1, 0},
                 {1, 1, 0, 1, 0, 0},
         };
-        double[][] b = {
-                {3},
-                {5},
-                {4},
-                {7},
-        };
+        double[] b = {3, 5, 4, 7};
 
         double[] result = solveForX(a, b);
 
@@ -268,19 +265,19 @@ class LinearSystemSolverTest {
         assertEquals(6, result.length, "Should have 6 variables");
 
         // All values should be non-negative
-        assertTrue(Arrays.stream(result).allMatch(v -> v >= -1e-9),
-                   "All values should be non-negative");
+        assertTrue(Arrays.stream(result).allMatch(v -> v >= -EPSILON),
+                "All values should be non-negative");
 
         // All values should be integers
-        assertTrue(Arrays.stream(result).allMatch(v -> Math.abs(v - Math.rint(v)) < 1e-5),
-                   "All values should be integers");
+        assertTrue(Arrays.stream(result).allMatch(v -> Math.abs(v - Math.rint(v)) < EPSILON),
+                "All values should be integers");
 
         // Verify the solution satisfies the equations
         double[] x = result;
-        assertEquals(3.0, x[4] + x[5], 1e-9, "Equation 1: x4 + x5 = 3");
-        assertEquals(5.0, x[1] + x[5], 1e-9, "Equation 2: x1 + x5 = 5");
-        assertEquals(4.0, x[2] + x[3] + x[4], 1e-9, "Equation 3: x2 + x3 + x4 = 4");
-        assertEquals(7.0, x[0] + x[1] + x[3], 1e-9, "Equation 4: x0 + x1 + x3 = 7");
+        assertEquals(3.0, x[4] + x[5], EPSILON, "Equation 1: x4 + x5 = 3");
+        assertEquals(5.0, x[1] + x[5], EPSILON, "Equation 2: x1 + x5 = 5");
+        assertEquals(4.0, x[2] + x[3] + x[4], EPSILON, "Equation 3: x2 + x3 + x4 = 4");
+        assertEquals(7.0, x[0] + x[1] + x[3], EPSILON, "Equation 4: x0 + x1 + x3 = 7");
     }
 }
 
