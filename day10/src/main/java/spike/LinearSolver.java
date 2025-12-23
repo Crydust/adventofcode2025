@@ -4,6 +4,8 @@ import java.util.Arrays;
 
 public class LinearSolver {
 
+    private static final double EPSILON = 1e-11;
+
     /**
      * Creates an augmented matrix [A | b] from matrix A and vector b.
      */
@@ -53,7 +55,7 @@ public class LinearSolver {
      */
     static int findPivotRow(double[][] aug, int startRow, int column, int numRows) {
         for (int i = startRow; i < numRows; i++) {
-            if (Math.abs(aug[i][column]) > 1e-11) {
+            if (Math.abs(aug[i][column]) > EPSILON) {
                 return i;
             }
         }
@@ -104,7 +106,7 @@ public class LinearSolver {
         // For each row, mark the first non-zero column as a pivot column
         for (int i = 0; i < aug.length; i++) {
             for (int j = 0; j < numVars; j++) {
-                if (Math.abs(aug[i][j]) > 1e-11) {
+                if (Math.abs(aug[i][j]) > EPSILON) {
                     isPivot[j] = true;
                     break; // Only mark the first non-zero as pivot for this row
                 }
@@ -186,7 +188,7 @@ public class LinearSolver {
      */
     static int findPivotInRow(double[][] aug, int row, int numVars) {
         for (int j = 0; j < numVars; j++) {
-            if (Math.abs(aug[row][j]) > 1e-11) {
+            if (Math.abs(aug[row][j]) > EPSILON) {
                 return j;
             }
         }
@@ -198,7 +200,7 @@ public class LinearSolver {
      */
     static boolean isValidIntegerSolution(double[] x) {
         for (double v : x) {
-            if (v < -1e-11 || Math.abs(v - Math.rint(v)) > 1e-11) {
+            if (v < -EPSILON || Math.abs(v - Math.rint(v)) > EPSILON) {
                 return false;
             }
         }
