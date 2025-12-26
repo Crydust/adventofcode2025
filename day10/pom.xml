@@ -15,6 +15,17 @@
     </properties>
 
     <dependencies>
+        <!-- hipparchus is a fork of commons-math -->
+        <dependency>
+            <groupId>org.hipparchus</groupId>
+            <artifactId>hipparchus-core</artifactId>
+            <version>4.0.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.hipparchus</groupId>
+            <artifactId>hipparchus-optim</artifactId>
+            <version>4.0.2</version>
+        </dependency>
         <dependency>
             <groupId>org.choco-solver</groupId>
             <artifactId>choco-solver</artifactId>
