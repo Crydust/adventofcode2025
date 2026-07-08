@@ -12,7 +12,7 @@ import org.ojalgo.optimisation.Expression;
 import org.ojalgo.optimisation.ExpressionsBasedModel;
 import org.ojalgo.optimisation.Optimisation;
 
-public class Day10OjAlgo {
+public class Day10Part2OjAlgo {
 
     static void main() throws Exception {
         Stopwatch stopwatch = Stopwatch.start();
@@ -24,7 +24,7 @@ public class Day10OjAlgo {
         int sum = lines.parallelStream()
                 .map(Machine::parse)
                 .peek(_ -> pb.incrementMax())
-                .mapToInt(Day10OjAlgo::determineMinimalButtonPresses)
+                .mapToInt(Day10Part2OjAlgo::determineMinimalButtonPresses)
                 .peek(_ -> pb.incrementDone())
                 .sum();
 
@@ -76,7 +76,7 @@ public class Day10OjAlgo {
 
     @SuppressWarnings("SameParameterValue")
     private static List<String> readInputLines(String name) throws IOException {
-        try (var in = new BufferedReader(new InputStreamReader(requireNonNull(Day10OjAlgo.class.getResourceAsStream(name)), UTF_8))) {
+        try (var in = new BufferedReader(new InputStreamReader(requireNonNull(Day10Part2OjAlgo.class.getResourceAsStream(name)), UTF_8))) {
             return in.lines().toList();
         }
     }
