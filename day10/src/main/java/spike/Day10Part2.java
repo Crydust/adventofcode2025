@@ -2,6 +2,7 @@ package spike;
 
 import org.chocosolver.solver.Model;
 import org.chocosolver.solver.Settings;
+import org.chocosolver.solver.SettingsBuilder;
 import org.chocosolver.solver.Solver;
 import org.chocosolver.solver.search.strategy.BlackBoxConfigurator;
 import org.chocosolver.solver.variables.IntVar;
@@ -48,7 +49,7 @@ public class Day10Part2 {
     }
 
     private static Model createModel(Machine machine) {
-        Settings settings = Settings.prod();
+        Settings settings = SettingsBuilder.prod().build();
         Model model = new Model(machine.line(), settings);
         int buttonCount = machine.buttons().size();
         int joltageCount = machine.joltages().size();
